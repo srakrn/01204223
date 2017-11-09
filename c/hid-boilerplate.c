@@ -244,5 +244,9 @@ int main()
   for (;;)
   {
     usbPoll();
+    sendKey(KEY_S,0);
+    _delay_ms(10);
+    sendKey(KEY_NONE,0);
+    _delay_ms(100);
   }
 }
