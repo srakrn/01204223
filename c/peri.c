@@ -7,6 +7,8 @@ void init_peripheral()
   DDRC &= ~( (1<<PC3) | (1<<PC4) );
   PORTC &= ~( (1<<PC2) | (1<<PC1) | (1<<PC0) | (1<<PC4) );
   PORTC |= (1<<PC3);
+  DDRB &= ~( (1<<PC3) );
+  PORTB |= (1<<PC3);
 }
 
 void set_led(uint8_t pin, uint8_t state)
