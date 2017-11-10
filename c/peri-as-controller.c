@@ -211,89 +211,49 @@ void sendMouse(int8_t dx, int8_t dy, uint8_t buttons)
 //////////////////////////////////////////////////////////////
 
 uint8_t control = 0;
-uint8_t red_btn_status = 0;
-uint8_t blue_btn_status = 0;
+uint8_t btn_status = 0;
 
 PT_THREAD(get_button_task(struct pt *pt)){
   static uint32_t ts = 0;
-  uint8_t red_sw;
-  uint8_t blue_sw;
+  uint8_t sw;
 
   PT_BEGIN(pt);
   for(;;){
-    red_sw = IS_RED_SW_PRESSED();
-    if(red_sw){
-      if(red_btn_status == 0){
-        red_btn_status = 1;
-      }
-      else{
-        red_btn_status = 2;
-      }
+    uint8_t sw = IS_SW_PRESSED();
+    if(sw){
+      btn_status = 1;
+      set_led(PC0, 1);
     }
     else{
-      if(red_btn_status == 2){
-        red_btn_status = 3;
-      }
-      else{
-        red_btn_status = 0;
-      }
-    }
-    blue_sw = IS_BLUE_SW_PRESSED();
-    if(blue_sw){
-      if(blue_btn_status == 0){
-        blue_btn_status = 1;
-      }
-      else{
-        blue_btn_status = 2;
-      }
-    }
-    else{
-      if(blue_btn_status == 2){
-        blue_btn_status = 3;
-      }
-      else{
-        blue_btn_status = 0;
-      }
+      btn_status = 0;
+      set_led(PC0, 0);
     }
     PT_DELAY(pt,20,ts);
   }
+
   PT_END(pt);
 }
 
 PT_THREAD(controller_task(struct pt *pt)){
   static uint32_t ts = 0;
   PT_BEGIN(pt);
+
   for (;;){
-    if(red_btn_status == 1 || blue_btn_status == 1){
-      if(red_btn_status == 1){
-        if(control){
-          sendKey(KEY_C,0);
-        }
-        else{
-          sendKey(KEY_X,0);
-        }
-        control++;
-        control%=2;
-        PT_DELAY(pt,20,ts);
-        red_btn_status = 2;
+    if(btn_status == 1){
+      if(control){
+        sendKey(KEY_C,0);
       }
-      if(blue_btn_status == 1){
-        if(control){
-          sendKey(KEY_Z,0);
-        }
-        else{
-          sendKey(KEY_V,0);
-        }
-        control++;
-        control%=2;
-        PT_DELAY(pt,20,ts);
-        blue_btn_status = 2;
+      else{
+        sendKey(KEY_X,0);
       }
-    }
-    else {
+      control++;
+      control%=2;
+      PT_DELAY(pt,20,ts);
       sendKey(KEY_NONE,0);
-      PT_YIELD(pt);
     }
+	else {
+		PT_YIELD(pt);
+	}
   }
 
   PT_END(pt);
@@ -366,5 +326,3 @@ int main()
     main_task(&main_pt);
   }
 }
-
-// vim:set tabstop=2 softtabstop=0 expandtab shiftwidth=2:

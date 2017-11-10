@@ -1,6 +1,4 @@
 #define IS_SW_PRESSED()   (!(PINC & (1<<PC3)))
-#define IS_RED_SW_PRESSED()   (!(PINC & (1<<PC3)))
-#define IS_BLUE_SW_PRESSED()   (!(PINB & (1<<PC3)))
 
 #define LED_RED    0
 #define LED_YELLOW 1
