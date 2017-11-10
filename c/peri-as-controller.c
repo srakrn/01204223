@@ -183,6 +183,8 @@ uint16_t light;  // Updated by Light-Task; to be shared among threads
 
 // Protothread states
 struct pt main_pt;
+struct pt blink_pt;
+struct pt get_button_pt;
 struct pt controller_pt;
 
 ////////////////////////////////////////////////////////////////
@@ -207,14 +209,66 @@ void sendMouse(int8_t dx, int8_t dy, uint8_t buttons)
 }
 
 //////////////////////////////////////////////////////////////
-PT_THREAD(controller_task(struct pt *pt))
-{
+
+uint8_t control = 0;
+uint8_t btn_status = 0;
+
+PT_THREAD(get_button_task(struct pt *pt)){
+  static uint32_t ts = 0;
+  uint8_t sw;
+
+  PT_BEGIN(pt);
+  for(;;){
+    uint8_t sw = IS_SW_PRESSED();
+    if(sw){
+      btn_status = 1;
+      set_led(PC0, 1);
+    }
+    else{
+      btn_status = 0;
+      set_led(PC0, 0);
+    }
+    PT_DELAY(pt,20,ts);
+  }
+
+  PT_END(pt);
+}
+
+PT_THREAD(controller_task(struct pt *pt)){
   static uint32_t ts = 0;
   PT_BEGIN(pt);
 
+  for (;;){
+    if(btn_status == 1){
+      if(control){
+        sendKey(KEY_C,0);
+      }
+      else{
+        sendKey(KEY_X,0);
+      }
+      control++;
+      control%=2;
+      PT_DELAY(pt,20,ts);
+      sendKey(KEY_NONE,0);
+    }
+	else {
+		PT_YIELD(pt);
+	}
+  }
+
+  PT_END(pt);
+}
+
+PT_THREAD(blink_task(struct pt *pt)){
+  static uint32_t ts = 0;
+  PT_BEGIN(pt);
+  DDRD |= (1<<PD3);
   for (;;)
   {
-	// Your code goes here.
+    PT_DELAY(pt,500,ts);
+    PORTD |= (1<<PD3);
+    PT_DELAY(pt,500,ts);
+    PORTD &= ~(1<<PD3);
   }
 
   PT_END(pt);
@@ -223,8 +277,12 @@ PT_THREAD(controller_task(struct pt *pt))
 PT_THREAD(main_task(struct pt *pt))
 {
   PT_BEGIN(pt);
-  PT_WAIT_UNTIL(pt,usbInterruptIsReady());
-  controller_task(&controller_pt);
+  for(;;){
+    blink_task(&blink_pt);
+    get_button_task(&get_button_pt);
+    PT_WAIT_UNTIL(pt,usbInterruptIsReady());
+    controller_task(&controller_pt);
+  }
   PT_END(pt);
 }
 
@@ -257,6 +315,8 @@ int main()
 
   // Initialize tasks
   PT_INIT(&main_pt);
+  PT_INIT(&blink_pt);
+  PT_INIT(&get_button_pt);
   PT_INIT(&controller_pt);
 
   sei();

@@ -214,7 +214,16 @@ PT_THREAD(controller_task(struct pt *pt))
 
   for (;;)
   {
-	// Your code goes here.
+  	while(!IS_SW_PRESSED()){
+      // do nothing
+    }
+    sendKey(KEY_C,0);
+    PT_DELAY(pt,20,ts);
+    while(IS_SW_PRESSED()){
+      // do nothing
+    }
+    sendKey(KEY_NONE,0);
+    PT_DELAY(pt,20,ts);
   }
 
   PT_END(pt);
