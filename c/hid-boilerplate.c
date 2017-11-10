@@ -183,20 +183,14 @@ uint16_t light;  // Updated by Light-Task; to be shared among threads
 
 // Protothread states
 struct pt main_pt;
-struct pt light_pt;
-struct pt haunting_pt;
-struct pt gamepad_pt;
-struct pt blink_pt;
+struct pt controller_pt;
 
-////////////////////////////////////////////////////////////////
-// Automatically called by usbpoll() when host makes a request
 ////////////////////////////////////////////////////////////////
 usbMsgLen_t usbFunctionSetup(uchar data[8])
 {
   return 0;  /* Return nothing to host for now */
 }
 
-//////////////////////////////////////////////////////////////
 void sendKey(uint8_t keycode, uint8_t modifiers)
 {
   reportKeyboard.key_code = keycode;
@@ -204,13 +198,58 @@ void sendKey(uint8_t keycode, uint8_t modifiers)
   usbSetInterrupt((uchar*)&reportKeyboard, sizeof(reportKeyboard));
 }
 
-//////////////////////////////////////////////////////////////
 void sendMouse(int8_t dx, int8_t dy, uint8_t buttons)
 {
   reportMouse.dx = dx;
   reportMouse.dy = dy;
   reportMouse.buttons = buttons;
   usbSetInterrupt((uchar*)&reportMouse, sizeof(reportMouse));
+}
+
+//////////////////////////////////////////////////////////////
+PT_THREAD(controller_task(struct pt *pt))
+{
+  static uint32_t ts = 0;
+  PT_BEGIN(pt);
+
+  for (;;)
+  {
+    while(!IS_SW_PRESSED()){
+      // wait for a click
+    }
+    sendKey(KEY_C,0);
+    PT_DELAY(pt,10,ts);
+    sendKey(KEY_NONE,0);
+    while(!IS_SW_PRESSED()){
+      // wait for a release
+    }
+  }
+
+  PT_END(pt);
+}
+
+PT_THREAD(blink_task(struct pt *pt))
+{
+  static uint32_t ts = 0;
+  PT_BEGIN(pt);
+  DDRD |= (1<<PD3);
+  for (;;)
+  {
+    PT_DELAY(pt,500,ts);
+    PORTD |= (1<<PD3);
+    PT_DELAY(pt,500,ts);
+    PORTD &= ~(1<<PD3);
+  }
+
+  PT_END(pt);
+}
+
+PT_THREAD(main_task(struct pt *pt))
+{
+  PT_BEGIN(pt);
+  PT_WAIT_UNTIL(pt,usbInterruptIsReady());
+  controller_task(&controller_pt);
+  PT_END(pt);
 }
 
 //////////////////////////////////////////////////////////////
@@ -240,13 +279,14 @@ int main()
   reportGamepad.light = 0;
   reportGamepad.button = 0;
 
+  // Initialize tasks
+  PT_INIT(&main_pt);
+  PT_INIT(&controller_pt);
+
   sei();
   for (;;)
   {
     usbPoll();
-    sendKey(KEY_S,0);
-    _delay_ms(10);
-    sendKey(KEY_NONE,0);
-    _delay_ms(100);
+    main_task(&main_pt);
   }
 }
