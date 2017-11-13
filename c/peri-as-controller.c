@@ -274,7 +274,6 @@ PT_THREAD(controller_task(struct pt *pt)){
         }
         control++;
         control%=2;
-        PT_DELAY(pt,20,ts);
         red_btn_status = 2;
       }
       if(blue_btn_status == 1){
@@ -286,12 +285,14 @@ PT_THREAD(controller_task(struct pt *pt)){
         }
         control++;
         control%=2;
-        PT_DELAY(pt,20,ts);
         blue_btn_status = 2;
       }
+        PT_DELAY(pt,40,ts);
     }
     else {
-      sendKey(KEY_NONE,0);
+      if((red_btn_status == 3 || red_btn_status == 0) && (blue_btn_status == 3 || blue_btn_status == 0)){
+        sendKey(KEY_NONE,0);
+      }
       PT_YIELD(pt);
     }
   }
