@@ -2,7 +2,7 @@ TARGET=usb-ghost
 MCU=atmega168
 F_CPU=16000000
 CFLAGS=-mmcu=$(MCU) -Os -DF_CPU=$(F_CPU) -Iusbdrv -I.
-OBJS=peri.o timer.o usbdrv/usbdrv.o usbdrv/usbdrvasm.o
+OBJS=piezosensors.o timer.o usbdrv/usbdrv.o usbdrv/usbdrvasm.o
 
 .SECONDARY:
 
